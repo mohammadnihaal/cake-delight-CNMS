@@ -1,0 +1,59 @@
+# Optional quick local alternative to Kubernetes: docker compose up --build
+services:
+  mongo:
+    image: mongo:7
+    volumes: [mongo-data:/data/db]
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports: ["15672:15672"]
+  mailpit:
+    image: axllent/mailpit
+    ports: ["8025:8025"]
+
+  catalog-service:
+    build: ./catalog-service
+    environment: &mongo-env
+      MONGO_URI: mongodb://mongo:27017/cakedelight
+    depends_on: [mongo]
+  seed:
+    build: ./catalog-service
+    command: ["node", "src/seed.js"]
+    environment: *mongo-env
+    depends_on: [mongo]
+    restart: "no"
+  order-service:
+    build: ./order-service
+    environment:
+      MONGO_URI: mongodb://mongo:27017/cakedelight
+      CATALOG_URL: http://catalog-service:3001
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on: [mongo, rabbitmq, catalog-service]
+  rating-service:
+    build: ./rating-service
+    environment: *mongo-env
+    depends_on: [mongo]
+  notification-service:
+    build: ./notification-service
+    # SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / MAIL_FROM come from notification-service/.env
+    env_file:
+      - path: ./notification-service/.env
+        required: false
+    environment:
+      MONGO_URI: mongodb://mongo:27017/cakedelight
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on: [mongo, rabbitmq, mailpit]
+  gateway:
+    build: ./gateway
+    environment:
+      CATALOG_URL: http://catalog-service:3001
+      ORDER_URL: http://order-service:3002
+      RATING_URL: http://rating-service:3003
+      NOTIFICATION_URL: http://notification-service:3004
+    depends_on: [catalog-service, order-service, rating-service, notification-service]
+  frontend:
+    build: ./frontend
+    ports: ["3000:80"]
+    depends_on: [gateway]
+
+volumes:
+  mongo-data:

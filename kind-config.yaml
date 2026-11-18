@@ -1,0 +1,11 @@
+# Used only with kind: maps the NodePorts to localhost so
+# http://localhost:30080 (app) and http://localhost:30025 (Mailpit) work.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 30080
+      - containerPort: 30025
+        hostPort: 30025

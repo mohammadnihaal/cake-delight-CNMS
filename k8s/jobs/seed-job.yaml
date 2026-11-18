@@ -1,0 +1,18 @@
+# One-off job: loads sample cakes into MongoDB (skips if cakes already exist)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-catalog
+  namespace: cakedelight
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: seed
+          image: cakedelight/catalog-service:latest
+          imagePullPolicy: IfNotPresent
+          command: ["node", "src/seed.js"]
+          envFrom:
+            - configMapRef: { name: cakedelight-config }
