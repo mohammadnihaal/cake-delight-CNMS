@@ -5,7 +5,7 @@ metadata:
   name: catalog-service
   namespace: cakedelight
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels: { app: catalog-service }
   template:
